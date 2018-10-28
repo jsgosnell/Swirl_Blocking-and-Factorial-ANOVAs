@@ -1,0 +1,230 @@
+- Class: meta
+  Course: Swirl_Blocking and Factorial ANOVAs
+  Lesson: Blocking and Factorial ANOVAs
+  Author: J. Stephen Gosnell
+  Type: Standard
+  Organization: Baruch College, City University of New York
+  Version: 2.4.3
+
+- Class: text
+  Output: Welcome to Swirl! This interface will help review some of the code we've used in class.
+
+- Class: text
+  Output: Today we'll review how to add other categorical variables to our ANOVA.  There are many ways to do this in R, but we'll continue to focus on using the lm command.
+  
+- Class: cmd_question
+  Output: Consider an experiment to determine if different types of gas (regular, premium, ultra) lead to different gas mileages in cars.  In this experiment, 10 cars were each given a full tank of each of the gas types and driven until the tank was empty. The data was used to calculate miles driven per gallon (mpg).  Get the data using gas <- read.csv("https://raw.githubusercontent.com/jsgosnell/CUNY-BioStats/master/datasets/gas.csv").
+  CorrectAnswer: gas <- read.csv("https://raw.githubusercontent.com/jsgosnell/CUNY-BioStats/master/datasets/gas.csv")
+  AnswerTests: omnitest(correctExpr='gas <- read.csv("https://raw.githubusercontent.com/jsgosnell/CUNY-BioStats/master/datasets/gas.csv")')
+  Hint: Use gas <- read.csv("https://raw.githubusercontent.com/jsgosnell/CUNY-BioStats/master/datasets/gas.csv").
+  
+- Class: mult_question
+  Output: What is our null hypothesis (Ho)?
+  AnswerChoices: mile per gallon does not depend on gas type;mile per gallon does depend on gas type; I'm not sure
+  CorrectAnswer: mile per gallon does not depend on gas type
+  AnswerTests: omnitest(correctVal='mile per gallon does not depend on gas type')
+  Hint: Remember, a null hypothesis is a hypothesis of no difference!
+  
+- Class: cmd_question
+  Output: Use the head command to inspect the dataset.
+  CorrectAnswer: head(gas)
+  AnswerTests: omnitest(correctExpr='head(gas)')
+  Hint: Try head(gas)
+  
+- Class: cmd_question
+  Output: Note that for each car we have 3 measurements. We could do this analysis using a one-way ANOVA like we learned last week, but we have another factor - Car. In this case each car was tested with each gas type. This means our gas measurements for each car are paired. This type of design reduces noise in the data since we don't change cars among each gas type.  To run this data as a paired test, we can use the lm command  like last time, but now we add the car factor to the model.  Try gas_lm <- lm(mpg ~ Car + GasType, gas); the + sign tells R to add GasType to the model.
+  CorrectAnswer: gas_lm <- lm(mpg ~ Car + GasType, gas)
+  AnswerTests: omnitest(correctExpr='gas_lm <- lm(mpg ~ Car + GasType, gas)')
+  Hint: Try gas_lm <- lm(mpg ~ Car + GasType, gas).  
+  
+- Class: cmd_question
+  Output: Before we analyze results of any test, we need to make sure the data are appropriate for the test (our assumptions are met). For any linear model, the assumptions are that the error terms (the noise around the model fit for each point) are independent, identically distributed, and follow a normal distribution.  You can visually check this by plotting your lm object. Try plot(gas_lm).  This will return four plot that you'll need to press enter to see. 
+  CorrectAnswer: plot(gas_lm)
+  AnswerTests: omnitest(correctExpr='plot(gas_lm)')
+  Hint: Try plot(gas_lm).
+ 
+
+- Class: text
+  Output: The four plots help us make sure our data fits our assumptions.  The first (residuals vs fitted) should show no pattern. Stacks of data are ok/expected, since the ANOVA is estimating one average width for each species, but you shouldn't see one stack that is much more/less spread out.  The red line should be fairly straight!  The second graph is a normal qq plot of the residuals - they should fall along the line!  R automatically marks the three points with the largest standardized residuals. Not usually important, but if these points are way off the line you may want to check for typos in the data.  The third plot is another type of residual (studentized by default) vs fit; just check for any structure and red line being flat.  The 4th plot considers leverage (is a data point really impacting the model fit). Look for points that occur outside the dashed red Cook Distance lines (this may not exist if no high leverage points are present).  Although we have a few outliers, the normality assumption appears to be ok. 
+
+- Class: cmd_question
+  Output: To get our results, use the summary function on the lm object you created.
+  CorrectAnswer: summary(gas_lm)
+  AnswerTests: omnitest(correctExpr='summary(gas_lm)')
+  Hint: Try summary(gas_lm).
+
+- Class: cmd_question
+  Output: This give us output and a p-value in the lower right corner, but its odd in that it gives estimates and t-values for each species.  You can use the Anova command from the car package to get an overall p-value to determine if width differs among species. Download and load the car package, then use the Anova command. It needs the model you created, and you should get in the habit of specifying type=III for the residuals argument(though it doesn't matter here). 
+  CorrectAnswer: Anova(gas_lm, type = "III")
+  AnswerTests: omnitest(correctExpr='Anova(gas_lm, type = "III")')
+  Hint: Try Anova(gas_lm, type = "III").
+
+- Class: mult_question
+  Output: Now you can see the p-value associated with both gas type and car. Notice we ran this experiment to see how gas type impacts miles per gallon; cars were just a nuisance factor we added due to experimental design, so we can ignore the p-value for it.  How do you interpret the p-value for gas type?
+  AnswerChoices: reject H0; fail to reject H0; I'm not sure
+  CorrectAnswer: reject H0
+  AnswerTests: omnitest(correctVal='reject H0')
+  Hint: Remember, if our p-value is below .05 we typically reject the null hypothesis.
+
+- Class: text
+  Output: So we now believe there is a difference in miles per gallon based on gas type,but we don't know where! All the populations could be different from each other, or only one might differ from the others.  We consider these outcomes using post-hoc tests.  We ONLY do these if we get a significant overall p-value from the ANOVA!
+
+- Class: cmd_question
+  Output: We'll carry out post-hoc tests using the multcomp package.  Require it, then use the glht function. It requires the model you created plus a list of tests you want to run, and you need to save the output as an object. For now, let's just Tukey tests, which tests every possible combination of groups against each other. Try gas_comparisons <- glht(gas_lm, linfct = mcp(GasType = "Tukey")).
+  CorrectAnswer: gas_comparisons <- glht(gas_lm, linfct = mcp(GasType = "Tukey"))
+  AnswerTests: omnitest(correctExpr='gas_comparisons <- glht(gas_lm, linfct = mcp(GasType = "Tukey"))')
+  Hint: Try gas_comparisons <- glht(gas_lm, linfct = mcp(GasType = "Tukey"))
+
+- Class: cmd_question
+  Output: Now use the summary command to see the output.
+  CorrectAnswer: summary(gas_comparisons)
+  AnswerTests: omnitest(correctExpr='summary(gas_comparisons)')
+  Hint: Try summary(gas_comparisons).
+
+- Class: mult_question
+  Output: Now you can see the comparisons among all groups (with the overall error rate controlled!).  What do our results show?
+  AnswerChoices: all gas types differ from each other; only ultra is different; only premium is different; only regular is different
+  CorrectAnswer: all gas types differ from each other
+  AnswerTests: omnitest(correctVal='all gas types differ from each other')
+  Hint: Look at the p-values for each comparison!
+ 
+- Class: cmd_question
+  Output: Next's let consider a different experiment.  This time we want to determine if a gas additive impacts miles per gallon.  However, we think the effects may depend on the type of vehicle (Hybrid, Minivan, Sportscar), so we get 20 of each of these vehicles and have 10 of each run using gas with or without the additive.  This is called a factorial design.  Get the data with additive <- read.table("https://dasl.datadescription.com/download/data/3231", header = T).
+  CorrectAnswer: additive <- read.table("https://dasl.datadescription.com/download/data/3231", header = T)
+  AnswerTests: omnitest(correctExpr='additive <- read.table("https://dasl.datadescription.com/download/data/3231", header = T)')
+  Hint: Use additive <- read.table("https://dasl.datadescription.com/download/data/3231", header = T). Note you are reading a tab delimited file so you use read.table and specify it has a header (since the default is false).
+  
+ 
+- Class: cmd_question
+  Output: Use the head command to inspect the dataset.
+  CorrectAnswer: head(additive)
+  AnswerTests: omnitest(correctExpr='head(additive)')
+  Hint: Try head(additive)
+  
+- Class: cmd_question
+  Output: Note that for each car we only have 1 measurements, so we can't block for car. We also want to see if the impact of the additive depends on car type. In statistics we would say gas type "interacts" with car type to impact miles per gallon.  To consider this  we can again use the lm command, but now we add both "main effects" (car type and additive) to the model and their interaction.  We can specify interactions in R using a colon (so Additive:Type, order does not matter), or we can use a shortcut.  If we use additive_lm <- lm(mpg ~ Type * Additive, additive), the * tells R to include the main effects and their interaction. Try it.
+  CorrectAnswer: additive_lm <- lm(mpg ~ Type * Additive, additive)
+  AnswerTests: omnitest(correctExpr='additive_lm <- lm(mpg ~ Type * Additive, additive)')
+  Hint: Try additive_lm <- lm(mpg ~ Type * Additive, additive).
+  
+- Class: text
+  Output: 'Remember, for an ANOVA with interactions we actually have 3 different null hypotheses.  We are testing for the main effects of each factor (H0: there is no difference among cars; HO: there is no difference among gas additives), and we are also testing for an interaction among these factors (HO:  there is no interaction between gas type and car type).'    
+  
+- Class: cmd_question
+  Output: Before we analyze results of any test, we need to make sure the data are appropriate for the test (our assumptions are met). For any linear model, the assumptions are that the error terms (the noise around the model fit for each point) are independent, identically distributed, and follow a normal distribution.  You can visually check this by plotting your lm object. Try plot(additive_lm).  This will return four plot that you'll need to press enter to see. 
+  CorrectAnswer: plot(additive_lm)
+  AnswerTests: omnitest(correctExpr='plot(additive_lm)')
+  Hint: Try plot(additive_lm).
+ 
+
+- Class: text
+  Output: The four plots help us make sure our data fits our assumptions.  The first (residuals vs fitted) should show no pattern. Stacks of data are ok/expected, since the ANOVA is estimating one average width for each species, but you shouldn't see one stack that is much more/less spread out.  The red line should be fairly straight!  The second graph is a normal qq plot of the residuals - they should fall along the line!  R automatically marks the three points with the largest standardized residuals. Not usually important, but if these points are way off the line you may want to check for typos in the data.  The third plot is another type of residual (studentized by default) vs fit; just check for any structure and red line being flat.  The 4th plot considers leverage (is a data point really impacting the model fit). Look for points that occur outside the dashed red Cook Distance lines (this may not exist if no high leverage points are present).  Although we have a few outliers, the normality assumption appears to be ok. 
+
+- Class: cmd_question
+  Output: This time will skip straight to the Anova command to get our results. Try Anova(additive_lm, type = "III").
+  CorrectAnswer: Anova(additive_lm, type = "III")
+  AnswerTests: omnitest(correctExpr='Anova(additive_lm, type = "III")')
+  Hint: Try Anova(additive_lm, type = "III").
+  
+- Class: mult_question
+  Output: Now you can see the p-value associated with both gas additive and vehicle type and their interaction. We can't consider the impact of car and gas additive together if they interact, so check the interaction first. Given the p-value associated with the interaction (type:additive), what do we do?
+  AnswerChoices: reject H0; fail to reject H0; I'm not sure
+  CorrectAnswer: reject H0
+  AnswerTests: omnitest(correctVal='reject H0')
+  Hint: Remember, if our p-value is below .05 we typically reject the null hypothesis.
+
+- Class: mult_question
+  Output: 'So we now believe there is an interaction between the impact of the gas additive and vehicle type.  That means the impact of gas additive likely depends on vehicle type, so we should analyze each individually.  Graphically this would appear as having non-parallel lines linking gas additives for each vehicle type.  Code and script to make these plots are shared in the lecture files (not reproduced here as ggplot2 is tricky enough).  You can see an example image @ CUNY-BioStats/multimedia/gas_plot.jpg and @ 
+  CUNY-BioStats/multimedia/gas_plot_script.R.  go there now.  Which vehicle type does gas additive not appear to impact mpg?'
+  AnswerChoices: sportscar; minivan; hybrid
+  CorrectAnswer: sportscar
+  AnswerTests: omnitest(correctVal='sportscar')
+  Hint: Which one of the lines appears to be nearly flat (meaning mpg doesn't change based on gas additive)?
+  
+- Class: mult_question
+  Output: Looking at the graph again, which vehicle type does gas additive appear to have the largest impact on in regards to mpg?
+  AnswerChoices: sportscar; minivan; hybrid
+  CorrectAnswer: hybrid
+  AnswerTests: omnitest(correctVal='hybrid')
+  Hint: Which one of the lines appears to the most "sloped" (meaning gas additive has a major impact on mpg)?
+
+- Class: cmd_question
+  Output: Since we have significant interactions between gas additive and car type, we should analyze each car type separately using one-way ANOVAs to see how gas additive impacts mpg. First, lets analyze the data for minivans using the lm function. You'll need to subset the data, so try additive_van_lm <- lm(mpg ~ Additive, additive[additive$Type == "Minivan",]).
+  CorrectAnswer: additive_van_lm <- lm(mpg ~ Additive, additive[additive$Type == "Minivan",])
+  AnswerTests: omnitest(correctExpr='additive_van_lm <- lm(mpg ~ Additive, additive[additive$Type == "Minivan",])')
+  Hint: Try additive_van_lm <- lm(mpg ~ Additive, additive[additive$Type == "Minivan",])
+
+- Class: cmd_question
+  Output: Now use the plot command to check the assumptions.
+  CorrectAnswer: plot(additive_van_lm)
+  AnswerTests: omnitest(correctExpr='plot(additive_van_lm)')
+  Hint: Try plot(additive_van_lm)
+  
+- Class: cmd_question
+  Output: Our plots look ok, so we can continue.  Now use the Anova command to check the output.
+  CorrectAnswer: Anova(additive_van_lm, type = "III")
+  AnswerTests: omnitest(correctExpr='Anova(additive_van_lm, type = "III")')
+  Hint: Try Anova(additive_van_lm, type = "III")
+
+- Class: mult_question
+  Output: Now you can see the comparisons among gas additives.  What do our results show?
+  AnswerChoices: gas additive impacts mpg; gas additive does not impact mpg; not sure
+  CorrectAnswer: gas additive impacts mpg
+  AnswerTests: omnitest(correctVal='gas additive impacts mpg')
+  Hint: Look at the p-values for additive!
+  
+- Class: cmd_question
+  Output: Now do the same thing for hybrids with additive_hybrid_lm <- lm(mpg ~ Additive, additive[additive$Type == "Hybrid",]).
+  CorrectAnswer: additive_hybrid_lm <- lm(mpg ~ Additive, additive[additive$Type == "Hybrid",])
+  AnswerTests: omnitest(correctExpr='additive_hybrid_lm <- lm(mpg ~ Additive, additive[additive$Type == "Hybrid",])')
+  Hint: Try additive_hybrid_lm <- lm(mpg ~ Additive, additive[additive$Type == "Hybrid",])
+
+- Class: cmd_question
+  Output: Now use the plot command to check the assumptions.
+  CorrectAnswer: plot(additive_hybrid_lm)
+  AnswerTests: omnitest(correctExpr='plot(additive_hybrid_lm)')
+  Hint: Try plot(additive_hybrid_lm)
+  
+- Class: cmd_question
+  Output: Our plots look ok, so we can continue.  Now use the Anova command to check the output.
+  CorrectAnswer: Anova(additive_hybrid_lm, type = "III")
+  AnswerTests: omnitest(correctVal='Anova(additive_hybrid_lm, type = "III")')
+  Hint: Try Anova(additive_hybrid_lm, type = "III")
+
+- Class: mult_question
+  Output: Now you can see the comparisons among gas additives.  What do our results show?
+  AnswerChoices: gas additive impacts mpg; gas additive does not impact mpg; not sure
+  CorrectAnswer: gas additive impacts mpg
+  AnswerTests: omnitest(correctVal='gas additive impacts mpg')
+  Hint: Look at the p-values for additive!
+  
+- Class: cmd_question
+  Output: Now do the same thing for sportscars with additive_car_lm <- lm(mpg ~ Additive, additive[additive$Type == "Sportscar",]).
+  CorrectAnswer: additive_car_lm <- lm(mpg ~ Additive, additive[additive$Type == "Sportscar",])
+  AnswerTests: omnitest(correctExpr='additive_car_lm <- lm(mpg ~ Additive, additive[additive$Type == "Sportscar",])')
+  Hint: Try additive_car_lm <- lm(mpg ~ Additive, additive[additive$Type == "Sportscar",])
+
+- Class: cmd_question
+  Output: Now use the plot command to check the assumptions.
+  CorrectAnswer: plot(additive_car_lm)
+  AnswerTests: omnitest(correctExpr='plot(additive_car_lm)')
+  Hint: Try plot(additive_car_lm)
+  
+- Class: cmd_question
+  Output: Our plots look ok, so we can continue.  Now use the Anova command to check the output.
+  CorrectAnswer: Anova(additive_car_lm, type = "III")
+  AnswerTests: omnitest(correctExpr='Anova(additive_car_lm, type = "III")')
+  Hint: Try Anova(additive_car_lm, type = "III")
+
+- Class: mult_question
+  Output: Now you can see the comparisons among gas additives.  What do our results show?
+  AnswerChoices: gas additive impacts mpg; gas additive does not impact mpg; not sure
+  CorrectAnswer: gas additive impacts mpg
+  AnswerTests: omnitest(correctVal='gas additive impacts mpg')
+  Hint: Look at the p-values for additive!
+
+- Class: text
+  Output: So our outomes show that the gas additive does impact the mpg for each vehicle type.  You could check the direction of impact using the summarySE command to get the average mpg for each vehicle type with and without the additive.  However, we still have an interaction as the amount of impact depends on the vehicle type! Note if the interaction had not been significant we could have dropped the term from the model and ran the model process again (check assumptions and p-values).  The final model would look  like our blocking example except we would care about the impact of car type.  Post-hoc tests are also possible for 2-way ANOVA's using the glht function we described earlier in class.  
+
+- Class: text
+  Output: This concludes our ANOVA extension review. 
